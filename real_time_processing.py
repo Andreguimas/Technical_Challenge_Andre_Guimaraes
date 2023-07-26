@@ -1,3 +1,4 @@
+# Import necessary libraries
 from kafka import KafkaProducer
 import fastavro
 import io
@@ -8,8 +9,7 @@ from pymongo import MongoClient
 import time
 from pymongo.cursor import CursorType
 
-
-# Define o esquema Avro para os dados de cada cidade
+# Define the Avro schema for the city data
 schema_avro = {
     "type": "record",
     "name": "CityData",
@@ -24,7 +24,7 @@ schema_avro = {
     ]
 }
 
-# Function to connect to MongoDB and replace value
+# Function to connect to MongoDB and drop a collection
 def drop_collection_mongodb(db_name, collection_name):
     client = MongoClient('localhost', 27017)
     db = client[db_name]
@@ -32,53 +32,42 @@ def drop_collection_mongodb(db_name, collection_name):
     
     collection.drop()
 
-# Função para serializar o registro (dicionário) usando o esquema Avro
+# Function to serialize a record (dictionary) using the Avro schema
 def serialize_city_data(data):
     bytes_writer = io.BytesIO()
     fastavro.schemaless_writer(bytes_writer, schema_avro, data)
     return bytes_writer.getvalue()
 
-# Função para configurar a conexão com o MongoDB
+# Function to set up the MongoDB connection
 def setup_mongodb_connection():
     client = MongoClient('localhost', 27017)
     db = client['technical_challenge_ubiwhere']
     collection = db['best_cities']
     return collection
 
-# Função para processar o evento e enviar para o tópico Kafka
+# Function to process an event and send it to the Kafka topic
 def process_event(event):
     city_data = json.loads(dumps(event))
     serialized_data = serialize_city_data(city_data)
     producer.send(topic_name, value=serialized_data)
 
-# Configuração do produtor Kafka
-kafka_broker = 'localhost:9092'  # Endereço do servidor Kafka
-topic_name = 'city_data_topic'  # Nome do tópico Kafka
+# Kafka producer configuration
+kafka_broker = 'localhost:9092'  # Kafka broker address
+topic_name = 'city_data_topic'  # Kafka topic name
 
 producer = KafkaProducer(
     bootstrap_servers=kafka_broker,
-    value_serializer=lambda v: v  # Não faz a serialização, já que os dados são bytes
+    value_serializer=lambda v: v  # No serialization is performed, as the data is already in bytes
 )
 
-# Configuração da conexão com o MongoDB
+# MongoDB connection setup
 collection = setup_mongodb_connection()
 
-# Lista para armazenar os IDs dos documentos já processados
+# List to store the IDs of the processed documents
 processed_ids = []
 
-#Drop cities collection
+# Drop the 'cities' collection
 drop_collection_mongodb('sustainability', 'cities')
-
-'''# Loop para capturar eventos em tempo real através do polling
-while True:
-    new_documents = collection.find({"_id": {"$nin": processed_ids}})
-
-    for event in new_documents:
-        process_event(event)
-        processed_ids.append(event["_id"])
-
-# O loop acima continuará fazendo o polling na coleção do MongoDB para verificar se há novos documentos adicionados e enviando-os para o tópico Kafka.
-# Para interromper o loop, pressione 'Ctrl + C' no terminal onde o script está a ser executado.'''
 
 # Function to process all events and send them to the Kafka topic
 def process_all_events():

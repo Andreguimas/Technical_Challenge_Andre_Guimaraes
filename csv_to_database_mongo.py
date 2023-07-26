@@ -8,7 +8,7 @@ def connect_to_mongodb():
     db = client['technical_challenge_ubiwhere']  # technical_challenge_ubiwhere database
     return db
 
-# Read data from CSV and insert into MongoDB collection (ex: best_cities)
+# Read data from CSV and insert into MongoDB collection (e.g., best_cities)
 def insert_data_to_mongodb(csv_file, collection_name):
     # Read data from CSV into a pandas DataFrame
     data_df = pd.read_csv(csv_file)
@@ -19,7 +19,7 @@ def insert_data_to_mongodb(csv_file, collection_name):
     # Connect to MongoDB
     db = connect_to_mongodb()
 
-    # Insert data into the best _cities collection (ex: best_cities)
+    # Insert data into the specified MongoDB collection (e.g., best_cities)
     collection = db[collection_name]
     result = collection.insert_many(data_list)
 
